@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>ASSAY — Crypto Creator Rate Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=Bebas+Neue&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#08090b;--s1:#0e1014;--s2:#131519;--border:#1c1f26;--border2:#252830;
+  --white:#f0f2f7;--muted:#4a4f60;--muted2:#2e3140;
+  --green:#0df27a;--green-glow:rgba(13,242,122,0.15);--green-border:rgba(13,242,122,0.25);
+  --amber:#ffb800;--red:#ff3557;--red-dim:rgba(255,53,87,0.1);
+  --mono:'IBM Plex Mono',monospace;--sans:'Barlow',sans-serif;--display:'Bebas Neue',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--white);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);pointer-events:none;z-index:9999}
+.grid-bg{position:fixed;inset:0;background-image:linear-gradient(rgba(13,242,122,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(13,242,122,0.03) 1px,transparent 1px);background-size:52px 52px;pointer-events:none;z-index:0}
+.blob{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0;opacity:0.5}
+.blob1{width:600px;height:600px;background:rgba(13,242,122,0.06);top:-200px;left:-200px}
+.blob2{width:500px;height:500px;background:rgba(29,155,240,0.05);bottom:-100px;right:-100px}
+.wrap{position:relative;z-index:1}
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex}
+/* LANDING */
+#screen-landing{flex-direction:column;align-items:center;justify-content:center;padding:60px 24px;text-align:center}
+.land-logo{font-family:var(--display);font-size:clamp(60px,12vw,100px);letter-spacing:0.06em;line-height:1;margin-bottom:8px}
+.land-logo span{color:var(--green)}
+.land-tag{font-family:var(--mono);font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:var(--muted);margin-bottom:32px}
+.land-headline{font-family:var(--display);font-size:clamp(28px,5vw,48px);letter-spacing:0.03em;line-height:1.05;margin-bottom:16px;max-width:600px}
+.land-sub{font-size:14px;color:var(--muted);line-height:1.7;max-width:480px;margin:0 auto 48px}
+.land-error{display:none;background:var(--red-dim);border:1px solid rgba(255,53,87,0.3);border-radius:8px;padding:14px 20px;margin-bottom:20px;font-size:13px;color:var(--red);max-width:460px;line-height:1.6;text-align:left}
+.btn-x{display:inline-flex;align-items:center;gap:12px;background:var(--white);color:#000;border:none;border-radius:30px;padding:16px 40px;font-family:var(--sans);font-size:16px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.btn-x svg{width:20px;height:20px;flex-shrink:0}
+.btn-x:hover{background:#e0e0e0;transform:translateY(-2px)}
+.scope-pills{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:24px}
+.scope-pill{display:flex;align-items:center;gap:6px;background:var(--s1);border:1px solid var(--border2);border-radius:20px;padding:6px 14px;font-size:11px;color:var(--muted);font-family:var(--mono)}
+.scope-pill::before{content:'✓';color:var(--green);font-size:10px}
+.features-row{display:flex;gap:32px;margin-top:64px;flex-wrap:wrap;justify-content:center}
+.feature{display:flex;flex-direction:column;align-items:center;gap:10px;font-size:12px;color:var(--muted);max-width:140px;text-align:center;line-height:1.5}
+.feature-icon{font-size:24px}
+.tier-table{width:100%;max-width:460px;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:48px;text-align:left}
+.tier-table-title{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);padding:12px 16px;border-bottom:1px solid var(--border);background:var(--s1)}
+.t-row{display:grid;grid-template-columns:1fr 1fr 1fr;padding:9px 16px;font-size:11px;border-bottom:1px solid var(--border)}
+.t-row:last-child{border-bottom:none}
+.t-row.head{font-family:var(--mono);font-size:9px;letter-spacing:0.1em;color:var(--muted);background:var(--s1)}
+.tbadge{display:inline-block;font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;border:1px solid}
+/* LOADING */
+#screen-loading{flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;text-align:center}
+.loader-ring{width:72px;height:72px;border:2px solid var(--border2);border-top-color:var(--green);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 28px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-title{font-family:var(--display);font-size:32px;letter-spacing:0.06em;margin-bottom:8px}
+.load-status{font-family:var(--mono);font-size:12px;color:var(--muted);min-height:20px}
+.load-err{font-family:var(--mono);font-size:11px;color:var(--red);margin-top:6px;min-height:16px;max-width:380px}
+.load-steps{margin-top:32px;display:flex;flex-direction:column;gap:12px;width:100%;max-width:340px}
+.load-step{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--muted);opacity:0.4;transition:all 0.3s}
+.load-step.done{opacity:1;color:var(--white)}.load-step.active{opacity:1;color:var(--green)}
+.load-step-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.load-step.done .load-step-dot{background:var(--green)}
+.load-step.active .load-step-dot{background:var(--green);box-shadow:0 0 8px var(--green);animation:pd 1s ease-in-out infinite}
+@keyframes pd{0%,100%{box-shadow:0 0 4px var(--green)}50%{box-shadow:0 0 14px var(--green)}}
+/* MANUAL */
+#screen-manual{flex-direction:column;align-items:center;justify-content:center;padding:40px 20px}
+.manual-box{width:100%;max-width:560px}
+.manual-logo{font-family:var(--display);font-size:28px;letter-spacing:0.06em;margin-bottom:16px}
+.manual-logo span{color:var(--green)}
+.manual-profile{display:flex;align-items:center;gap:14px;background:var(--s1);border:1px solid var(--border2);border-radius:10px;padding:16px 20px;margin-bottom:24px}
+.manual-avatar{width:48px;height:48px;border-radius:50%;object-fit:cover}
+.manual-name{font-size:15px;font-weight:700}.manual-handle{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.manual-notice{background:rgba(255,184,0,0.07);border:1px solid rgba(255,184,0,0.2);border-radius:8px;padding:14px 18px;margin-bottom:28px;font-size:12px;color:var(--amber);line-height:1.6}
+.manual-notice strong{display:block;margin-bottom:4px;font-size:13px}
+.manual-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.mfield{display:flex;flex-direction:column;gap:7px}
+.mfield label{font-family:var(--mono);font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted)}
+.mfield input{background:var(--s1);border:1px solid var(--border2);border-radius:6px;padding:12px 14px;font-family:var(--mono);font-size:14px;color:var(--white);outline:none;-moz-appearance:textfield;-webkit-appearance:none}
+.mfield input::-webkit-outer-spin-button,.mfield input::-webkit-inner-spin-button{-webkit-appearance:none}
+.mfield input:focus{border-color:var(--green);box-shadow:0 0 0 3px var(--green-glow)}
+.mfield input::placeholder{color:var(--muted)}
+.btn-calc{width:100%;padding:16px;background:var(--green);border:none;border-radius:6px;color:#000;font-family:var(--display);font-size:18px;letter-spacing:0.06em;cursor:pointer;transition:all 0.2s;-webkit-appearance:none}
+.btn-calc:hover{background:#2fffa0}
+/* RESULTS */
+#screen-results{flex-direction:column;padding:0}
+.results-header{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid var(--border);background:var(--s1);flex-wrap:wrap;gap:16px;position:sticky;top:0;z-index:100}
+.results-logo{font-family:var(--display);font-size:28px;letter-spacing:0.06em}
+.results-logo span{color:var(--green)}
+.user-pill{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border2);border-radius:30px;padding:6px 16px 6px 6px}
+.user-pill img{width:32px;height:32px;border-radius:50%;object-fit:cover}
+.user-pill-name{font-size:13px;font-weight:600;line-height:1.2}
+.user-pill-handle{font-size:11px;color:var(--muted);font-family:var(--mono)}
+.btn-disconnect{background:transparent;border:1px solid var(--border2);border-radius:6px;color:var(--muted);font-family:var(--mono);font-size:10px;padding:6px 12px;cursor:pointer;letter-spacing:0.1em;text-transform:uppercase;transition:all 0.2s}
+.btn-disconnect:hover{border-color:var(--red);color:var(--red)}
+.results-body{max-width:920px;margin:0 auto;width:100%;padding:40px 24px 80px;-webkit-overflow-scrolling:touch}
+.error-card{display:none;background:var(--red-dim);border:1px solid rgba(255,53,87,0.3);border-radius:8px;padding:20px 24px;margin-bottom:24px;font-size:13px;color:var(--red);line-height:1.6}
+.sec-label{font-family:var(--mono);font-size:9px;letter-spacing:0.25em;text-transform:uppercase;color:var(--muted);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.sec-note{font-size:9px;color:var(--muted2)}
+/* IMP OVERRIDE */
+.imp-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;background:var(--s1);border:1px solid var(--border2);border-radius:8px;padding:14px 18px;margin-bottom:16px}
+.imp-bar-label{display:flex;flex-direction:column;gap:3px}
+.imp-bar-label span:first-child{font-size:13px;font-weight:600}
+.imp-bar-hint{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.imp-bar-inp{display:flex;gap:8px;align-items:center}
+.imp-bar-inp input{background:var(--s2);border:1px solid var(--border2);border-radius:6px;padding:9px 12px;font-family:var(--mono);font-size:13px;color:var(--white);outline:none;width:130px;-moz-appearance:textfield;-webkit-appearance:none}
+.imp-bar-inp input::-webkit-outer-spin-button,.imp-bar-inp input::-webkit-inner-spin-button{-webkit-appearance:none}
+.imp-bar-inp input:focus{border-color:var(--green);box-shadow:0 0 0 2px var(--green-glow)}
+.imp-bar-inp button{background:var(--green);color:#000;border:none;border-radius:6px;padding:9px 16px;font-family:var(--display);font-size:14px;letter-spacing:0.06em;cursor:pointer;-webkit-appearance:none}
+.imp-bar-inp button:hover{background:#2fffa0}
+/* CANVAS */
+#creator-canvas{max-width:100%;border-radius:14px;display:block;margin-bottom:12px}
+.card-actions{display:flex;gap:10px;margin-bottom:40px}
+.btn-dl{display:flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--border2);border-radius:8px;color:var(--white);font-family:var(--display);font-size:16px;letter-spacing:0.06em;padding:14px 20px;cursor:pointer;transition:all 0.2s;white-space:nowrap}
+.btn-dl:hover{border-color:var(--green);color:var(--green)}
+.btn-sh{flex:1;display:flex;align-items:center;justify-content:center;gap:10px;background:#000;border:2px solid var(--white);border-radius:8px;color:var(--white);font-family:var(--display);font-size:16px;letter-spacing:0.06em;padding:14px 20px;cursor:pointer;transition:all 0.2s}
+.btn-sh:hover{background:var(--white);color:#000}
+/* PROFILE */
+.profile-card{display:flex;align-items:center;gap:20px;background:var(--s1);border:1px solid var(--border2);border-radius:10px;padding:24px;margin-bottom:16px;flex-wrap:wrap}
+.profile-avatar{width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--border2);flex-shrink:0}
+.profile-info{flex:1;min-width:140px}
+.profile-name{font-size:18px;font-weight:700;margin-bottom:2px}
+.profile-handle{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:8px}
+.profile-bio{font-size:12px;color:var(--muted);line-height:1.5;max-width:400px}
+.profile-stats{display:flex;gap:24px;flex-wrap:wrap}
+.pstat{text-align:center}
+.pstat-val{font-family:var(--display);font-size:28px;letter-spacing:0.04em;line-height:1}
+.pstat-label{font-family:var(--mono);font-size:9px;letter-spacing:0.12em;color:var(--muted);text-transform:uppercase;margin-top:2px}
+/* RATE CARD */
+.rate-card{background:var(--s1);border:1px solid var(--border2);border-radius:10px;padding:32px;margin-bottom:16px;position:relative;overflow:hidden}
+.rate-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),transparent 60%)}
+.rate-card::after{content:'';position:absolute;top:0;left:0;width:200px;height:200px;background:radial-gradient(ellipse at 0% 0%,var(--green-glow),transparent 70%);pointer-events:none}
+.rate-top{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:28px}
+.rate-label{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.rate-value{font-family:var(--display);font-size:clamp(48px,8vw,80px);color:var(--green);line-height:1;letter-spacing:0.02em}
+.rate-right{text-align:right}
+.rate-range-label{font-size:11px;color:var(--muted);margin-bottom:4px}
+.rate-range-value{font-size:20px;font-weight:600;font-family:var(--mono)}
+.metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding-top:24px;border-top:1px solid var(--border)}
+.metric-box{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:14px}
+.metric-box-label{font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.metric-box-val{font-size:20px;font-weight:700}
+.metric-box-val.good{color:var(--green)}.metric-box-val.warn{color:var(--amber)}.metric-box-val.bad{color:var(--red)}
+.metric-box-sub{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:3px}
+/* BOT */
+.bot-card{background:var(--s1);border:1px solid var(--border2);border-radius:10px;padding:28px 32px;margin-bottom:16px}
+.bot-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.bot-title{font-family:var(--display);font-size:22px;letter-spacing:0.04em}
+.risk-badge{font-family:var(--mono);font-size:11px;font-weight:600;padding:5px 14px;border-radius:20px;letter-spacing:0.1em;text-transform:uppercase}
+.risk-clean{background:rgba(13,242,122,0.12);color:var(--green);border:1px solid var(--green-border)}
+.risk-suspect{background:rgba(255,184,0,0.12);color:var(--amber);border:1px solid rgba(255,184,0,0.3)}
+.risk-high{background:rgba(255,53,87,0.12);color:var(--red);border:1px solid rgba(255,53,87,0.3)}
+.bot-score-row{display:flex;align-items:center;gap:20px;margin-bottom:24px;flex-wrap:wrap}
+.bot-score-num{font-family:var(--display);font-size:52px;line-height:1;letter-spacing:0.02em;flex-shrink:0}
+.bot-meter-col{flex:1;min-width:200px}
+.bot-meter-label{font-family:var(--mono);font-size:9px;letter-spacing:0.15em;color:var(--muted);margin-bottom:8px;text-transform:uppercase}
+.bot-track{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:6px}
+.bot-fill{height:100%;border-radius:4px;transition:width 1s cubic-bezier(0.34,1.56,0.64,1);width:0%}
+.bot-track-marks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:8px;color:var(--muted2)}
+.signals-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.signal{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--s2);border:1px solid var(--border);border-radius:7px}
+.signal-icon{width:8px;height:8px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.sig-ok{background:var(--green)}.sig-warn{background:var(--amber)}.sig-bad{background:var(--red)}
+.signal-body{flex:1}
+.signal-title{font-size:11px;font-weight:600;margin-bottom:2px}
+.signal-desc{font-size:10px;color:var(--muted);line-height:1.5}
+.signal-pts{font-family:var(--mono);font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px}
+/* ANALYTICS */
+.a-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.a-card{background:var(--s1);border:1px solid var(--border2);border-radius:10px;padding:22px 24px}
+.a-title{font-family:var(--mono);font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
+.eb{display:flex;flex-direction:column;gap:10px}
+.eb-row{display:flex;align-items:center;gap:10px}
+.eb-lbl{font-size:11px;color:var(--muted);width:80px;flex-shrink:0}
+.eb-track{flex:1;height:7px;background:var(--border);border-radius:4px;overflow:hidden}
+.eb-fill{height:100%;border-radius:4px;transition:width 0.8s cubic-bezier(0.34,1.56,0.64,1)}
+.eb-val{font-family:var(--mono);font-size:11px;color:var(--white);width:48px;text-align:right;flex-shrink:0}
+.pc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pc-box{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:14px}
+.pc-tag{font-family:var(--mono);font-size:8px;letter-spacing:0.18em;text-transform:uppercase;margin-bottom:8px}
+.pc-tag.best{color:var(--green)}.pc-tag.worst{color:var(--red)}
+.pc-text{font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pc-stats{display:flex;gap:12px}
+.pc-stat{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.pc-stat span{color:var(--white)}
+.vg{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.vg-stat{background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:14px}
+.vg-val{font-family:var(--display);font-size:26px;letter-spacing:0.04em;margin-bottom:3px}
+.vg-lbl{font-family:var(--mono);font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted)}
+.vg-sub{font-size:10px;color:var(--muted);margin-top:4px}
+.tt{width:100%;border-collapse:collapse;font-size:12px}
+.tt thead tr{border-bottom:1px solid var(--border)}
+.tt th{font-family:var(--mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);padding:0 12px 10px 0;text-align:left;font-weight:400}
+.tt tbody tr{border-bottom:1px solid var(--border);transition:background 0.15s}
+.tt tbody tr:last-child{border-bottom:none}
+.tt tbody tr:hover{background:var(--s2)}
+.tt td{padding:11px 12px 11px 0;vertical-align:top}
+.tt-txt{color:var(--muted);max-width:260px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.tt-stat{font-family:var(--mono);font-size:11px;color:var(--white)}
+.tt-dim{color:var(--muted)}
+.pb{display:inline-block;font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:3px}
+.pb-hi{background:rgba(13,242,122,0.1);color:var(--green)}
+.pb-mid{background:rgba(255,184,0,0.1);color:var(--amber)}
+.pb-lo{background:rgba(255,53,87,0.1);color:var(--red)}
+/* BREAKDOWN */
+.breakdown-card{background:var(--s1);border:1px solid var(--border2);border-radius:10px;padding:28px 32px;margin-bottom:16px}
+.breakdown-title{font-family:var(--display);font-size:22px;letter-spacing:0.04em;margin-bottom:20px}
+.bd-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--border);font-size:13px;gap:16px}
+.bd-row:last-child{border-bottom:none}
+.bd-key{color:var(--muted)}.bd-val{font-family:var(--mono);font-size:12px;color:var(--white);text-align:right}
+.disclaimer{font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.8;padding:20px 0;border-top:1px solid var(--border);margin-top:8px}
+@media(max-width:600px){
+  .metrics-row{grid-template-columns:1fr 1fr}.signals-grid{grid-template-columns:1fr}
+  .a-grid{grid-template-columns:1fr}.pc-grid{grid-template-columns:1fr}.vg{grid-template-columns:1fr 1fr}
+  .results-header{padding:16px}.results-body{padding:24px 16px 60px}
+  .profile-card{flex-direction:column;align-items:flex-start}
+  .rate-card{padding:20px}.bot-card,.breakdown-card,.a-card{padding:18px}
+  .card-actions{flex-direction:column}.btn-dl{justify-content:center}
+  .imp-bar{flex-direction:column;align-items:flex-start}.manual-grid{grid-template-columns:1fr}
+  .tt th:nth-child(3),.tt td:nth-child(3){display:none}
+}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="blob blob1"></div>
+<div class="blob blob2"></div>
+<div id="dbg" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#1a0a00;border-top:1px solid #f60;padding:8px 16px;font-family:monospace;font-size:11px;color:#fa0;word-break:break-all"></div>
+
+<div class="wrap">
+
+<!-- LANDING -->
+<div class="screen active" id="screen-landing">
+  <div class="land-logo">AS<span>SA</span>Y</div>
+  <div class="land-tag">Crypto Creator Rate Calculator</div>
+  <div class="land-headline">KNOW YOUR<br>WORTH ON X</div>
+  <p class="land-sub">Connect your X account and get a data-driven rate for crypto promo posts — backed by your real impressions, engagement, and a full bot likelihood audit.</p>
+  <div class="land-error" id="land-error"></div>
+  <button class="btn-x" onclick="startOAuth()">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+    Connect with X
+  </button>
+  <div class="scope-pills">
+    <div class="scope-pill">Read-only access</div>
+    <div class="scope-pill">No posting ever</div>
+    <div class="scope-pill">Data stays in browser</div>
+  </div>
+  <div class="features-row">
+    <div class="feature"><div class="feature-icon">📊</div>Real engagement analysis from your tweets</div>
+    <div class="feature"><div class="feature-icon">🤖</div>6-signal bot likelihood audit</div>
+    <div class="feature"><div class="feature-icon">💰</div>Market-calibrated crypto promo rates</div>
+    <div class="feature"><div class="feature-icon">🔒</div>OAuth 2.0 — revoke anytime</div>
+  </div>
+  <div class="tier-table">
+    <div class="tier-table-title">Crypto Creator Rate Benchmarks</div>
+    <div class="t-row head"><span>Tier</span><span>Followers</span><span>Rate Range</span></div>
+    <div class="t-row"><span><span class="tbadge" style="color:#888;border-color:#333">Nano</span></span><span style="color:var(--muted)">&lt; 1K</span><span style="font-family:var(--mono)">$50 – $200</span></div>
+    <div class="t-row"><span><span class="tbadge" style="color:#6db3ff;border-color:#2a4a70">Micro</span></span><span style="color:var(--muted)">1K – 5K</span><span style="font-family:var(--mono)">$100 – $500</span></div>
+    <div class="t-row"><span><span class="tbadge" style="color:#80e8a0;border-color:#284038">Rising</span></span><span style="color:var(--muted)">5K – 10K</span><span style="font-family:var(--mono)">$300 – $800</span></div>
+    <div class="t-row"><span><span class="tbadge" style="color:var(--green);border-color:var(--green-border)">Mid</span></span><span style="color:var(--muted)">10K – 30K</span><span style="font-family:var(--mono)">$800 – $2,000</span></div>
+    <div class="t-row"><span><span class="tbadge" style="color:var(--amber);border-color:rgba(255,184,0,0.3)">Power</span></span><span style="color:var(--muted)">30K – 50K</span><span style="font-family:var(--mono)">$1,200 – $3,500</span></div>
+    <div class="t-row"><span><span class="tbadge" style="color:#ff9f6b;border-color:rgba(255,159,107,0.3)">Macro</span></span><span style="color:var(--muted)">50K – 100K</span><span style="font-family:var(--mono)">$2,000 – $7,000</span></div>
+    <div class="t-row"><span><span class="tbadge" style="color:var(--red);border-color:rgba(255,53,87,0.3)">KOL</span></span><span style="color:var(--muted)">100K+</span><span style="font-family:var(--mono)">$5,000 – $20,000</span></div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="screen" id="screen-loading">
+  <div class="loader-ring"></div>
+  <div class="load-title">ANALYZING...</div>
+  <div class="load-status" id="load-status">Connecting to X</div>
+  <div class="load-err" id="load-err"></div>
+  <div class="load-steps">
+    <div class="load-step" id="step-auth"><div class="load-step-dot"></div><span>Securing your session</span></div>
+    <div class="load-step" id="step-profile"><div class="load-step-dot"></div><span>Fetching account profile</span></div>
+    <div class="load-step" id="step-tweets"><div class="load-step-dot"></div><span>Pulling recent tweets</span></div>
+    <div class="load-step" id="step-analyze"><div class="load-step-dot"></div><span>Running engagement analysis</span></div>
+    <div class="load-step" id="step-bot"><div class="load-step-dot"></div><span>Bot likelihood audit</span></div>
+  </div>
+</div>
+
+<!-- MANUAL -->
+<div class="screen" id="screen-manual">
+  <div class="manual-box">
+    <div class="manual-logo">AS<span>SA</span>Y</div>
+    <div class="manual-profile">
+      <img class="manual-avatar" id="m-avatar" src="" alt="">
+      <div><div class="manual-name" id="m-name">—</div><div class="manual-handle" id="m-handle">—</div></div>
+    </div>
+    <div class="manual-notice">
+      <strong>⚠ Tweet data unavailable</strong>
+      Enter your 30-day averages below — full rate + bot audit runs instantly.
+    </div>
+    <div class="manual-grid">
+      <div class="mfield"><label>Avg Likes / Post</label><input type="number" id="mn-likes" placeholder="e.g. 210" min="0"></div>
+      <div class="mfield"><label>Avg Replies / Post</label><input type="number" id="mn-replies" placeholder="e.g. 28" min="0"></div>
+      <div class="mfield"><label>Avg Reposts / Post</label><input type="number" id="mn-reposts" placeholder="e.g. 55" min="0"></div>
+      <div class="mfield"><label>Avg Impressions / Post</label><input type="number" id="mn-imp" placeholder="e.g. 7000" min="0"></div>
+    </div>
+    <button class="btn-calc" onclick="calcManual()">CALCULATE MY RATE →</button>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="screen" id="screen-results">
+  <div class="results-header">
+    <div class="results-logo">AS<span>SA</span>Y</div>
+    <div class="user-pill"><img id="pill-av" src="" alt=""><div><div class="user-pill-name" id="pill-name">—</div><div class="user-pill-handle" id="pill-handle">—</div></div></div>
+    <button class="btn-disconnect" onclick="disconnect()">DISCONNECT</button>
+  </div>
+  <div class="results-body">
+    <div class="error-card" id="results-error"></div>
+
+    <div class="sec-label" style="margin-top:0"><span>Your Creator Card</span><span class="sec-note">Download &amp; Share</span></div>
+    <div class="imp-bar">
+      <div class="imp-bar-label"><span>Know your real avg impressions?</span><span class="imp-bar-hint">Override the estimate for a more accurate rate</span></div>
+      <div class="imp-bar-inp"><input type="number" id="imp-override" placeholder="e.g. 7000" min="0"><button onclick="applyOverride()">UPDATE</button></div>
+    </div>
+    <canvas id="creator-canvas"></canvas>
+    <div class="card-actions">
+      <button class="btn-dl" onclick="dlCard()"><svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M12 16l-5-5h3V4h4v7h3l-5 5zm-7 4v-2h14v2H5z"/></svg>DOWNLOAD PNG</button>
+      <button class="btn-sh" onclick="shareX()"><svg viewBox="0 0 24 24" fill="white" width="18" height="18"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622z"/></svg>SHARE ON X</button>
+    </div>
+
+    <div class="sec-label" style="margin-top:8px">Account Overview</div>
+    <div class="profile-card">
+      <img class="profile-avatar" id="r-av" src="" alt="">
+      <div class="profile-info"><div class="profile-name" id="r-name">—</div><div class="profile-handle" id="r-handle">—</div><div class="profile-bio" id="r-bio">—</div></div>
+      <div class="profile-stats">
+        <div class="pstat"><div class="pstat-val" id="r-fol">—</div><div class="pstat-label">Followers</div></div>
+        <div class="pstat"><div class="pstat-val" id="r-fing">—</div><div class="pstat-label">Following</div></div>
+        <div class="pstat"><div class="pstat-val" id="r-tc">—</div><div class="pstat-label">Tweets</div></div>
+      </div>
+    </div>
+
+    <div class="sec-label" style="margin-top:32px"><span>Suggested Rate</span><span class="sec-note" id="tweets-n">—</span></div>
+    <div class="rate-card">
+      <div class="rate-top">
+        <div><div class="rate-label">Per Promotional Post</div><div class="rate-value" id="r-rate">—</div></div>
+        <div class="rate-right"><div class="rate-range-label">Market Range</div><div class="rate-range-value" id="r-range">—</div></div>
+      </div>
+      <div class="metrics-row">
+        <div class="metric-box"><div class="metric-box-label">Avg Impressions</div><div class="metric-box-val" id="m-imp">—</div><div class="metric-box-sub" id="m-imp-sub">per post</div></div>
+        <div class="metric-box"><div class="metric-box-label">Engagement Rate</div><div class="metric-box-val" id="m-eng">—</div><div class="metric-box-sub">vs impressions</div></div>
+        <div class="metric-box"><div class="metric-box-label">Avg Likes</div><div class="metric-box-val" id="m-likes">—</div><div class="metric-box-sub">per post</div></div>
+        <div class="metric-box"><div class="metric-box-label">Follower Tier</div><div class="metric-box-val" id="m-tier">—</div><div class="metric-box-sub" id="m-tier-sub">—</div></div>
+      </div>
+    </div>
+
+    <div class="sec-label" style="margin-top:32px">Bot Likelihood Audit</div>
+    <div class="bot-card">
+      <div class="bot-header"><div class="bot-title">🤖 AUTHENTICITY SCORE</div><div class="risk-badge" id="risk-badge">—</div></div>
+      <div class="bot-score-row">
+        <div class="bot-score-num" id="bot-num">—</div>
+        <div class="bot-meter-col">
+          <div class="bot-meter-label">Bot Risk Score (0 = organic, 100 = heavily botted)</div>
+          <div class="bot-track"><div class="bot-fill" id="bot-fill"></div></div>
+          <div class="bot-track-marks"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
+        </div>
+      </div>
+      <div class="signals-grid" id="sigs"></div>
+    </div>
+
+    <div class="sec-label" style="margin-top:32px">Engagement Breakdown</div>
+    <div class="a-grid">
+      <div class="a-card"><div class="a-title">Where Engagement Comes From</div><div class="eb" id="eng-bars"></div></div>
+      <div class="a-card"><div class="a-title">Best vs Worst Post</div><div class="pc-grid" id="post-compare"></div></div>
+    </div>
+
+    <div class="sec-label" style="margin-top:32px">Reach &amp; Virality</div>
+    <div class="a-card" style="margin-bottom:16px"><div class="a-title">Key Performance Indicators</div><div class="vg" id="virality"></div></div>
+
+    <div class="sec-label" style="margin-top:32px"><span>Post Performance</span><span class="sec-note" id="tweets-n2">—</span></div>
+    <div class="a-card" style="margin-bottom:16px;overflow-x:auto">
+      <table class="tt"><thead><tr>
+        <th style="width:40%">Post</th><th>Eng.Rate</th><th>Impressions</th><th>Likes</th><th>Replies</th><th>Perf.</th>
+      </tr></thead><tbody id="tt-body"></tbody></table>
+    </div>
+
+    <div class="sec-label" style="margin-top:32px">Rate Breakdown</div>
+    <div class="breakdown-card"><div class="breakdown-title">HOW WE GOT THERE</div><div id="bd-rows"></div></div>
+
+    <p class="disclaimer">
+      ⚠ Rates are estimates based on crypto creator market benchmarks. Actual rates depend on deal structure, niche authority, and negotiation.
+      Impression data requires X API credits — if unavailable, impressions are estimated.
+      Bot detection is heuristic-based and provided for informational purposes only.
+    </p>
+  </div>
+</div>
+
+</div>
+
+<script>
+const CLIENT_ID   = 'dFBDbi1PRVFiZzBSZk1RWVQ5RkE6MTpjaQ';
+const REDIRECT_URI = 'https://assay-mu.vercel.app/';
+
+// ── Helpers ──────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) { el.classList.add('active'); window.scrollTo(0,0); }
+}
+function setStep(id, s) { const el=document.getElementById(id); if(el) el.className='load-step '+s; }
+function setStatus(msg, err) {
+  const s=document.getElementById('load-status'); if(s) s.textContent=msg;
+  const e=document.getElementById('load-err'); if(e) e.textContent=err||'';
+}
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+function fmtNum(n) { if(n>=1e6)return(n/1e6).toFixed(1).replace(/\.0$/,'')+'M'; if(n>=1e3)return(n/1e3).toFixed(1).replace(/\.0$/,'')+'K'; return Math.round(n)+''; }
+function fmtMoney(n) { return n>=1000?'$'+(n/1000).toFixed(1).replace(/\.0$/,'')+'k':'$'+Math.round(n); }
+function pct(v,d=1) { return v.toFixed(d)+'%'; }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function avg(a) { return a.length?a.reduce((x,y)=>x+y,0)/a.length:0; }
+function setText(id,v) { const el=document.getElementById(id); if(el) el.textContent=v; }
+function setMetric(id,val,cls,sub) {
+  const el=document.getElementById(id); if(!el)return;
+  el.textContent=val; el.className='metric-box-val'+(cls?' '+cls:'');
+  const se=document.getElementById(id+'-sub'); if(se&&sub) se.textContent=sub;
+}
+function showLandError(msg) {
+  const el=document.getElementById('land-error'); if(el){el.style.display='block';el.textContent=msg;}
+  showScreen('screen-landing');
+}
+
+// ── PKCE ─────────────────────────────────────────
+function genRnd(n) {
+  const c='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  const a=new Uint8Array(n); crypto.getRandomValues(a);
+  return Array.from(a).map(b=>c[b%c.length]).join('');
+}
+async function sha256b64(s) {
+  const d=new TextEncoder().encode(s), h=await crypto.subtle.digest('SHA-256',d);
+  return btoa(String.fromCharCode(...new Uint8Array(h))).replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+}
+
+// ── OAuth ─────────────────────────────────────────
+async function startOAuth() {
+  const verifier=genRnd(128), challenge=await sha256b64(verifier), state=genRnd(32);
+  localStorage.setItem('A_pkce',verifier); localStorage.setItem('A_state',state);
+  const p=new URLSearchParams({response_type:'code',client_id:CLIENT_ID,redirect_uri:REDIRECT_URI,
+    scope:'tweet.read users.read offline.access',state,code_challenge:challenge,code_challenge_method:'S256'});
+  window.location.href='https://twitter.com/i/oauth2/authorize?'+p;
+}
+
+async function exchangeCode(code) {
+  const verifier=localStorage.getItem('A_pkce');
+  const r=await fetch('/api/token',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({code,code_verifier:verifier,redirect_uri:REDIRECT_URI})});
+  const d=await r.json();
+  if(!r.ok||!d.access_token) throw new Error(d.error_description||d.error||'HTTP '+r.status);
+  return d.access_token;
+}
+
+// ── X API ─────────────────────────────────────────
+async function xGet(token, endpoint, params) {
+  const qs=new URLSearchParams({endpoint,...params});
+  const r=await fetch('/api/proxy?'+qs,{headers:{Authorization:'Bearer '+token}});
+  return r.json();
+}
+async function fetchProfile(token) {
+  const j=await xGet(token,'users/me',{'user.fields':'public_metrics,description,profile_image_url,username'});
+  if(!j.data) throw new Error(j.title||j.detail||'Profile failed');
+  return j.data;
+}
+async function fetchTweets(token,uid) {
+  let j;
+  try { j=await xGet(token,'users/'+uid+'/tweets',{max_results:'10',exclude:'retweets,replies','tweet.fields':'public_metrics,non_public_metrics,created_at,in_reply_to_user_id'}); }
+  catch(e){ j={}; }
+  if(!j.data||!j.data.length) {
+    j=await xGet(token,'users/'+uid+'/tweets',{max_results:'10',exclude:'retweets,replies','tweet.fields':'public_metrics,created_at,in_reply_to_user_id'});
+  }
+  if(!j.data||!j.data.length) throw new Error('No tweets found');
+  // Filter out self-replies (thread continuations / subposts)
+  const filtered = j.data.filter(t => !t.in_reply_to_user_id || t.in_reply_to_user_id !== uid);
+  const tweets = filtered.length > 0 ? filtered : j.data; // fallback if all filtered
+  return {tweets, hasImpressions:tweets.some(t=>t.non_public_metrics&&t.non_public_metrics.impression_count>0)};
+}
+
+// ── Impression override ───────────────────────────
+let _ov = null;
+(()=>{ const s=parseFloat(localStorage.getItem('A_ov')); if(s>0){_ov=s; window.addEventListener('DOMContentLoaded',()=>{const el=document.getElementById('imp-override');if(el)el.value=s;});} })();
+
+function applyOverride() {
+  const v=parseFloat(document.getElementById('imp-override').value);
+  if(!v||v<=0) return;
+  _ov=v; localStorage.setItem('A_ov',v);
+  const c=localStorage.getItem('A_results');
+  if(c){try{const{user,tweets,hasImpressions}=JSON.parse(c);renderResults(user,tweets,hasImpressions);window.scrollTo({top:0,behavior:'smooth'});}catch(e){}}
+}
+
+// ── Main flow ─────────────────────────────────────
+async function runFlow(code) {
+  showScreen('screen-loading');
+
+  setStep('step-auth','active'); setStatus('Securing your session...');
+  let token;
+  try {
+    token=await exchangeCode(code);
+    localStorage.setItem('A_token',token);
+    setStep('step-auth','done');
+  } catch(e) {
+    setStatus('Authorization failed',e.message); await sleep(3000);
+    showLandError('Authorization failed: '+e.message); return;
+  }
+
+  setStep('step-profile','active'); setStatus('Fetching your profile...');
+  let user;
+  try {
+    user=await fetchProfile(token);
+    setStep('step-profile','done');
+  } catch(e) {
+    setStatus('Profile failed',e.message); await sleep(3000);
+    showLandError('Could not load profile: '+e.message); return;
+  }
+
+  setStep('step-tweets','active'); setStatus('Pulling your tweets...');
+  let tweets=[],hasImpressions=false;
+  try {
+    ({tweets,hasImpressions}=await fetchTweets(token,user.id));
+    setStep('step-tweets','done');
+  } catch(e) {
+    setStep('step-tweets','done'); setStep('step-analyze','done'); setStep('step-bot','done');
+    setStatus('Manual input mode'); await sleep(400);
+    showManual(user); return;
+  }
+
+  setStep('step-analyze','active'); setStatus('Calculating metrics...'); await sleep(300); setStep('step-analyze','done');
+  setStep('step-bot','active'); setStatus('Running bot audit...'); await sleep(300); setStep('step-bot','done');
+  setStatus('Done.'); await sleep(200);
+
+  try {
+    localStorage.setItem('A_results',JSON.stringify({user,tweets,hasImpressions,ts:Date.now()}));
+    renderResults(user,tweets,hasImpressions);
+    showScreen('screen-results');
+  } catch(e) {
+    setStatus('Render error',e.message); await sleep(3000);
+    showLandError('Display error: '+e.message);
+  }
+}
+
+function showManual(user) {
+  window._mu=user; localStorage.setItem('A_mu',JSON.stringify(user));
+  const a=document.getElementById('m-avatar'); if(a)a.src=(user.profile_image_url||'').replace('_normal','_bigger');
+  setText('m-name',user.name); setText('m-handle','@'+user.username);
+  showScreen('screen-manual');
+}
+
+function calcManual() {
+  const user=window._mu; if(!user){showLandError('Session expired — please reconnect.');return;}
+  const li=parseFloat(document.getElementById('mn-likes').value)||0;
+  const re=parseFloat(document.getElementById('mn-replies').value)||0;
+  const rp=parseFloat(document.getElementById('mn-reposts').value)||0;
+  const im=parseFloat(document.getElementById('mn-imp').value)||0;
+  if(!li&&!re){alert('Please enter at least your average likes per post.');return;}
+  const tw=Array.from({length:10},()=>({
+    public_metrics:{like_count:li,reply_count:re,retweet_count:rp,quote_count:0,bookmark_count:0},
+    non_public_metrics:im>0?{impression_count:im}:null, text:'[Manual entry]'
+  }));
+  localStorage.setItem('A_results',JSON.stringify({user,tweets:tw,hasImpressions:im>0,ts:Date.now()}));
+  renderResults(user,tw,im>0); showScreen('screen-results');
+}
+
+// ── Analysis ──────────────────────────────────────
+function analyze(user, tweets, hasImpressions) {
+  const fol=user.public_metrics.followers_count, fing=user.public_metrics.following_count||1;
+  const li=avg(tweets.map(t=>t.public_metrics.like_count));
+  const rp=avg(tweets.map(t=>t.public_metrics.retweet_count));
+  const re=avg(tweets.map(t=>t.public_metrics.reply_count));
+  const qu=avg(tweets.map(t=>t.public_metrics.quote_count||0));
+  const bk=avg(tweets.map(t=>t.public_metrics.bookmark_count||0));
+  const hasOv=typeof _ov==='number'&&_ov>0;
+  let im;
+  if(hasOv)      im=_ov;
+  else if(hasImpressions) im=avg(tweets.map(t=>(t.non_public_metrics&&t.non_public_metrics.impression_count)||0));
+  else           im=Math.max(li/0.035, fol*0.12);
+  const totEng=li+rp+re+qu+bk;
+  const er=im>0?(totEng/im)*100:0;
+  const erF=fol>0?(totEng/fol)*100:0;
+  const ir=fol>0?(im/fol)*100:0;
+  const l2i=im>0?(li/im)*100:0;
+  const re2li=li>0?(re/li)*100:0;
+  const rt2li=li>0?(rp/li)*100:0;
+  const ffr=fing>0?fol/fing:999;
+
+  let tier,bMin,bMax;
+  if(fol<1000){tier='Nano';bMin=50;bMax=200;}
+  else if(fol<5000){tier='Micro';bMin=100;bMax=500;}
+  else if(fol<10000){tier='Rising';bMin=300;bMax=800;}
+  else if(fol<30000){tier='Mid';bMin=800;bMax=2000;}
+  else if(fol<50000){tier='Power';bMin=1200;bMax=3500;}
+  else if(fol<100000){tier='Macro';bMin=2000;bMax=7000;}
+  else{tier='KOL';bMin=5000;bMax=20000;}
+
+  let em;
+  if(er>=15)em=1.60;else if(er>=10)em=1.45;else if(er>=6)em=1.30;else if(er>=3)em=1.15;
+  else if(er>=1.5)em=1.00;else if(er>=0.8)em=0.85;else if(er>=0.4)em=0.68;else em=0.50;
+
+  let rm=1.0;
+  if(ir>=60)rm=1.35;else if(ir>=35)rm=1.20;else if(ir>=20)rm=1.10;else if(ir>=10)rm=1.05;else if(ir<5)rm=0.90;
+
+  let bot=0; const sigs=[];
+  if(erF<0.2){bot+=28;sigs.push({t:'Critically low follower engagement',d:pct(erF,2)+' of followers engage — inflation likely.',p:28,c:'bad'});}
+  else if(erF<0.5){bot+=12;sigs.push({t:'Low follower engagement',d:pct(erF,2)+' vs followers — below typical organic range.',p:12,c:'warn'});}
+  else{sigs.push({t:'Follower engagement healthy',d:pct(erF,2)+' of followers engage per post.',p:0,c:'ok'});}
+
+  if(er>=3)sigs.push({t:'Strong content engagement',d:pct(er)+' on impressions — above the 1–3% industry average.',p:0,c:'ok'});
+  else if(er>=1)sigs.push({t:'Average content engagement',d:pct(er)+' on impressions — normal range.',p:0,c:'ok'});
+  else{bot+=15;sigs.push({t:'Low content engagement',d:pct(er)+' — content not resonating or impressions inflated.',p:15,c:'warn'});}
+
+  if(hasImpressions||hasOv){
+    if(ir>200){bot+=22;sigs.push({t:'Impression reach unrealistic',d:pct(ir)+' reach — view bots suspected.',p:22,c:'bad'});}
+    else if(ir>=10)sigs.push({t:'Strong organic reach',d:pct(ir)+' of followers reached per post.',p:0,c:'ok'});
+    else if(ir<3){bot+=8;sigs.push({t:'Low reach rate',d:pct(ir)+' — followers may include ghost accounts.',p:8,c:'warn'});}
+    else sigs.push({t:'Reach rate normal',d:pct(ir)+' — typical organic reach.',p:0,c:'ok'});
+  } else sigs.push({t:'Impressions estimated',d:'Enter your real avg impressions above for a more precise audit.',p:0,c:'warn'});
+
+  if(li>10){
+    if(re2li<0.5){bot+=18;sigs.push({t:'Almost no replies vs likes',d:pct(re2li)+' reply ratio — likes may be botted.',p:18,c:'bad'});}
+    else if(re2li>=5)sigs.push({t:'Exceptional reply engagement',d:pct(re2li)+' reply-to-like — strong genuine community.',p:0,c:'ok'});
+    else sigs.push({t:'Reply ratio looks genuine',d:pct(re2li)+' reply-to-like — normal organic.',p:0,c:'ok'});
+  }
+
+  if(li>10&&rt2li>85){bot+=12;sigs.push({t:'RT rate disproportionate',d:pct(rt2li)+' RT-to-like — unusual pattern.',p:12,c:'warn'});}
+  else if(li>0)sigs.push({t:'Retweet pattern normal',d:pct(rt2li)+' RT-to-like — healthy sharing.',p:0,c:'ok'});
+
+  if(ffr<0.25&&fol<50000){bot+=10;sigs.push({t:'Follow-back farming detected',d:'F/F ratio of '+ffr.toFixed(2)+' — mass-follow growth tactic.',p:10,c:'warn'});}
+  else sigs.push({t:'F/F ratio healthy',d:'F/F ratio of '+ffr.toFixed(1)+' — organic growth pattern.',p:0,c:'ok'});
+
+  bot=Math.min(100,Math.round(bot));
+  let bp=1.0; if(bot>=65)bp=0.40; else if(bot>=45)bp=0.65; else if(bot>=25)bp=0.85;
+  const adjMin=bMin*em*bp*rm, adjMax=bMax*em*bp*rm;
+  return {fol,n:tweets.length,li,rp,re,qu,bk,im,hasImpressions,hasOv,er,erF,ir,l2i,re2li,rt2li,
+          tier,bMin,bMax,em,bot,bp,rm,adjMin,adjMax,sug:(adjMin+adjMax)/2,sigs};
+}
+
+// ── Render ────────────────────────────────────────
+function renderResults(user, tweets, hasImpressions) {
+  const d=analyze(user,tweets,hasImpressions);
+  const av=(user.profile_image_url||'').replace('_normal','_bigger');
+  const pm=user.public_metrics;
+
+  // Header
+  const pa=document.getElementById('pill-av'); if(pa)pa.src=av;
+  setText('pill-name',user.name); setText('pill-handle','@'+user.username);
+  const ra=document.getElementById('r-av'); if(ra)ra.src=av;
+  setText('r-name',user.name); setText('r-handle','@'+user.username); setText('r-bio',user.description||'');
+  setText('r-fol',fmtNum(pm.followers_count)); setText('r-fing',fmtNum(pm.following_count)); setText('r-tc',fmtNum(pm.tweet_count));
+  setText('r-rate',fmtMoney(d.sug)); setText('r-range',fmtMoney(d.adjMin)+' \u2013 '+fmtMoney(d.adjMax));
+  setText('tweets-n',d.n+' tweets analyzed');
+
+  const ec=d.er>=5?'good':d.er>=1.5?'':'warn';
+  const ic=(d.hasImpressions||d.hasOv)?((d.ir>10&&d.ir<60)?'good':'warn'):'warn';
+  setMetric('m-imp',fmtNum(Math.round(d.im)),ic,(d.hasImpressions||d.hasOv)?'real data':'estimated');
+  setMetric('m-eng',pct(d.er),ec,'vs impressions');
+  setMetric('m-likes',fmtNum(Math.round(d.li)),'','per post');
+  setMetric('m-tier',d.tier,'good',fmtNum(d.fol)+' followers');
+
+  // Bot
+  const bc=d.bot<25?'var(--green)':d.bot<55?'var(--amber)':'var(--red)';
+  const bCls=d.bot<25?'clean':d.bot<55?'suspect':'high';
+  const bLbl=d.bot<25?'\u2713 LIKELY CLEAN':d.bot<55?'\u26a0 SUSPICIOUS':'\u2717 HIGH RISK';
+  const bn=document.getElementById('bot-num'); if(bn){bn.textContent=d.bot;bn.style.color=bc;}
+  const rb=document.getElementById('risk-badge'); if(rb){rb.textContent=bLbl;rb.className='risk-badge risk-'+bCls;}
+  const fill=document.getElementById('bot-fill');
+  if(fill){fill.style.background=bc;fill.style.boxShadow='0 0 12px '+bc;setTimeout(()=>{fill.style.width=d.bot+'%'},200);}
+  const sg=document.getElementById('sigs');
+  if(sg)sg.innerHTML=d.sigs.map(s=>'<div class="signal"><div class="signal-icon sig-'+s.c+'"></div><div class="signal-body"><div class="signal-title">'+esc(s.t)+'</div><div class="signal-desc">'+esc(s.d)+'</div></div>'+(s.p>0?'<div class="signal-pts" style="color:'+(s.c==='bad'?'var(--red)':'var(--amber)')+'">+'+s.p+'</div>':'')+'</div>').join('');
+
+  // Engagement bars
+  const eb=document.getElementById('eng-bars');
+  if(eb){
+    const tot=d.li+d.rp+d.re+d.qu+d.bk||1;
+    const items=[{l:'Likes',v:d.li,c:'#0df27a'},{l:'Replies',v:d.re,c:'#3b82f6'},{l:'Reposts',v:d.rp,c:'#ffb800'},{l:'Bookmarks',v:d.bk,c:'#a78bfa'},{l:'Quotes',v:d.qu,c:'#f472b6'}].filter(i=>i.v>0);
+    eb.innerHTML=items.map(i=>'<div class="eb-row"><div class="eb-lbl">'+i.l+'</div><div class="eb-track"><div class="eb-fill" style="width:'+Math.round((i.v/tot)*100)+'%;background:'+i.c+'"></div></div><div class="eb-val">'+fmtNum(Math.round(i.v))+'</div></div>').join('');
+  }
+
+  // Best/worst
+  const pc=document.getElementById('post-compare');
+  if(pc&&tweets.length>=2){
+    const sc=tweets.map(t=>{const p=t.public_metrics,e=p.like_count+p.retweet_count+p.reply_count+(p.quote_count||0)+(p.bookmark_count||0),i=(t.non_public_metrics&&t.non_public_metrics.impression_count)||d.im;return{t,e,er:i>0?(e/i)*100:0};}).sort((a,b)=>b.er-a.er);
+    const box=(item,type)=>{const p=item.t.public_metrics,tx=item.t.text.length>80?item.t.text.slice(0,80)+'...':item.t.text;return '<div class="pc-box"><div class="pc-tag '+type+'">'+(type==='best'?'▲ TOP POST':'▼ LOWEST POST')+'</div><div class="pc-text">'+esc(tx)+'</div><div class="pc-stats"><div class="pc-stat">♥ <span>'+fmtNum(p.like_count)+'</span></div><div class="pc-stat">💬 <span>'+fmtNum(p.reply_count)+'</span></div><div class="pc-stat">📊 <span>'+pct(item.er)+'</span></div></div></div>';};
+    pc.innerHTML=box(sc[0],'best')+box(sc[sc.length-1],'worst');
+  }
+
+  // Virality
+  const vg=document.getElementById('virality');
+  if(vg){
+    const te=d.li+d.rp+d.re+d.qu+d.bk||1;
+    const ar=(d.rp+d.qu)/te*100, sv=d.im>0?d.bk/d.im*100:0, rr=d.li>0?d.re/d.li*100:0;
+    const cpe=te>0?d.sug/te:0, vc=d.im>0?d.rp/d.im*100:0;
+    const ks=[
+      {v:pct(d.ir),l:'Reach Rate',s:'impressions vs followers',c:d.ir>20?'var(--green)':d.ir>10?'var(--amber)':'var(--white)'},
+      {v:pct(ar),l:'Amplification Rate',s:'reposts+quotes / total eng',c:ar>15?'var(--green)':ar>7?'var(--amber)':'var(--white)'},
+      {v:pct(rr),l:'Community Depth',s:'replies vs likes',c:rr>10?'var(--green)':rr>3?'var(--amber)':'var(--white)'},
+      {v:'$'+cpe.toFixed(2),l:'Est. CPE for Brands',s:'cost per engagement',c:'var(--white)'},
+      {v:pct(sv,2),l:'Save Rate',s:'bookmarks vs impressions',c:sv>1?'var(--green)':'var(--white)'},
+      {v:pct(vc,2),l:'Viral Coefficient',s:'reposts vs impressions',c:vc>2?'var(--green)':'var(--white)'},
+    ];
+    vg.innerHTML=ks.map(k=>'<div class="vg-stat"><div class="vg-val" style="color:'+k.c+'">'+k.v+'</div><div class="vg-lbl">'+k.l+'</div><div class="vg-sub">'+k.s+'</div></div>').join('');
+  }
+
+  // Tweet table
+  const tb=document.getElementById('tt-body');
+  setText('tweets-n2',tweets.length+' tweets');
+  if(tb){
+    const rows=[...tweets].map(t=>{const p=t.public_metrics,e=p.like_count+p.retweet_count+p.reply_count+(p.quote_count||0)+(p.bookmark_count||0),i=(t.non_public_metrics&&t.non_public_metrics.impression_count)||d.im;return{t,p,e,i,er:i>0?(e/i)*100:0};}).sort((a,b)=>b.er-a.er);
+    tb.innerHTML=rows.map(r=>{
+      const tx=r.t.text.length>55?r.t.text.slice(0,55)+'...':r.t.text;
+      const iD=r.t.non_public_metrics&&r.t.non_public_metrics.impression_count?fmtNum(r.t.non_public_metrics.impression_count):'<span style="opacity:0.4">~'+fmtNum(Math.round(d.im))+'</span>';
+      const badge=r.er>=d.er*1.5?'<span class="pb pb-hi">HIGH</span>':r.er>=d.er*0.7?'<span class="pb pb-mid">AVG</span>':'<span class="pb pb-lo">LOW</span>';
+      return '<tr><td class="tt-txt">'+esc(tx)+'</td><td class="tt-stat">'+pct(r.er)+'</td><td class="tt-stat tt-dim">'+iD+'</td><td class="tt-stat">'+fmtNum(r.p.like_count)+'</td><td class="tt-stat">'+fmtNum(r.p.reply_count)+'</td><td>'+badge+'</td></tr>';
+    }).join('');
+  }
+
+  // Breakdown
+  const bd=document.getElementById('bd-rows');
+  if(bd)bd.innerHTML=[
+    ['Platform','X (Twitter)'],['Tweets Analyzed',d.n+' original posts'],
+    ['Follower Tier',d.tier+' ('+fmtNum(d.fol)+' followers)'],
+    ['Base Rate Range',fmtMoney(d.bMin)+' \u2013 '+fmtMoney(d.bMax)],
+    ['Eng. Rate (vs Impressions)',pct(d.er)+' \u2192 \xd7'+d.em.toFixed(2)],
+    ['Eng. Rate (vs Followers)',pct(d.erF)],
+    ['Avg Impressions',fmtNum(Math.round(d.im))+(d.hasImpressions||d.hasOv?' (real)':' (est.)')+' \u2192 \xd7'+d.rm.toFixed(2)],
+    ['Bot Risk Score',d.bot+' / 100 \u2192 '+pct((1-d.bp)*100,0)+' reduction'],
+    ['Adjusted Range',fmtMoney(d.adjMin)+' \u2013 '+fmtMoney(d.adjMax)],
+    ['Suggested Rate',fmtMoney(d.sug)],
+  ].map(([k,v])=>'<div class="bd-row"><span class="bd-key">'+k+'</span><span class="bd-val">'+v+'</span></div>').join('');
+
+  // Canvas card
+  paintCanvas(user,d);
+}
+
+// ── Canvas card ───────────────────────────────────
+function stars(d) {
+  let s=0;
+  if(d.er>=15)s+=35;else if(d.er>=10)s+=30;else if(d.er>=6)s+=25;else if(d.er>=3)s+=18;else if(d.er>=1.5)s+=12;else s+=4;
+  s+=Math.round(Math.max(0,100-d.bot)*0.35);
+  const tp={Nano:4,Micro:7,Rising:10,Mid:12,Power:14,Macro:15,KOL:15};
+  s+=tp[d.tier]||8;
+  if(d.hasImpressions||d.hasOv){if(d.ir>=15&&d.ir<=50)s+=15;else if(d.ir>=8)s+=10;else if(d.ir>=4)s+=6;else s+=2;}else s+=8;
+  return Math.round(Math.min(5,Math.max(1,1+(s/100)*4))*10)/10;
+}
+function starLbl(r){if(r>=4.5)return'ELITE CREATOR';if(r>=4)return'TOP PERFORMER';if(r>=3.5)return'STRONG ACCOUNT';if(r>=3)return'SOLID PRESENCE';if(r>=2.5)return'GROWING CREATOR';return'DEVELOPING';}
+
+function paintCanvas(user, d) {
+  const rating=stars(d); window._sd={user,d,rating};
+  const url=(user.profile_image_url||'').replace('_normal','_bigger');
+  const paint=(img)=>{
+    const canvas=document.getElementById('creator-canvas'); if(!canvas)return;
+    const DPR=Math.min(window.devicePixelRatio||1,3),W=900,H=480;
+    canvas.width=W*DPR;canvas.height=H*DPR;canvas.style.width='100%';canvas.style.height='auto';
+    const c=canvas.getContext('2d');c.scale(DPR,DPR);
+    const bg=c.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#0d1a12');bg.addColorStop(0.55,'#080f0b');bg.addColorStop(1,'#0a0e14');
+    c.fillStyle=bg;rrect(c,0,0,W,H,16);c.fill();
+    c.strokeStyle='rgba(13,242,122,0.04)';c.lineWidth=1;
+    for(let x=0;x<W;x+=32){c.beginPath();c.moveTo(x,0);c.lineTo(x,H);c.stroke();}
+    for(let y=0;y<H;y+=32){c.beginPath();c.moveTo(0,y);c.lineTo(W,y);c.stroke();}
+    const gl=c.createRadialGradient(0,0,0,0,0,300);gl.addColorStop(0,'rgba(13,242,122,0.09)');gl.addColorStop(1,'transparent');
+    c.fillStyle=gl;c.fillRect(0,0,W,H);
+    c.strokeStyle='rgba(13,242,122,0.2)';c.lineWidth=1.5;rrect(c,0,0,W,H,16);c.stroke();
+    const tl=c.createLinearGradient(0,0,W*0.6,0);tl.addColorStop(0,'#0df27a');tl.addColorStop(1,'transparent');
+    c.strokeStyle=tl;c.lineWidth=2;c.beginPath();c.moveTo(16,1);c.lineTo(W-16,1);c.stroke();
+    c.textAlign='left';c.font='700 24px sans-serif';
+    const wAS=c.measureText('AS').width,wSA=c.measureText('SA').width,wY=c.measureText('Y').width;
+    const lx=W-28-wAS-wSA-wY;
+    c.fillStyle='rgba(240,242,247,0.25)';c.fillText('AS',lx,52);c.fillStyle='#0df27a';c.fillText('SA',lx+wAS,52);c.fillStyle='rgba(240,242,247,0.25)';c.fillText('Y',lx+wAS+wSA,52);
+    if(img){c.save();c.beginPath();c.arc(52,52,34,0,Math.PI*2);c.clip();c.drawImage(img,18,18,68,68);c.restore();c.strokeStyle='rgba(13,242,122,0.4)';c.lineWidth=2;c.beginPath();c.arc(52,52,35,0,Math.PI*2);c.stroke();}
+    else{c.fillStyle='#1c1f26';c.beginPath();c.arc(52,52,34,0,Math.PI*2);c.fill();}
+    c.textAlign='left';c.font='700 19px sans-serif';c.fillStyle='#f0f2f7';c.fillText(user.name||'',98,44);
+    c.font='400 13px monospace';c.fillStyle='#4a4f60';c.fillText('@'+(user.username||''),98,62);
+    c.font='400 10px monospace';c.fillStyle='rgba(74,79,96,0.9)';c.fillText('SUGGESTED RATE PER PROMO POST',28,110);
+    c.font='800 90px sans-serif';c.fillStyle='#0df27a';c.fillText(fmtMoney(d.sug),24,200);
+    c.font='500 14px sans-serif';c.fillStyle='#4a4f60';c.fillText('Range: '+fmtMoney(d.adjMin)+' \u2013 '+fmtMoney(d.adjMax),30,222);
+    const sy=260,ss=26,sf=Math.floor(rating),sh=(rating-sf)>=0.5?1:0,se=5-sf-sh;
+    const sx=28;c.font=ss+'px serif';c.textAlign='left';
+    for(let i=0;i<sf;i++){c.globalAlpha=1;c.fillStyle='#ffb800';c.fillText('\u2605',sx+i*(ss+3),sy+ss*0.82);}
+    if(sh){c.globalAlpha=0.5;c.fillStyle='#ffb800';c.fillText('\u2605',sx+sf*(ss+3),sy+ss*0.82);}
+    for(let i=0;i<se;i++){c.globalAlpha=0.15;c.fillStyle='#fff';c.fillText('\u2605',sx+(sf+sh+i)*(ss+3),sy+ss*0.82);}
+    c.globalAlpha=1;const ax=sx+5*(ss+3)+4;
+    c.font='700 30px sans-serif';c.fillStyle='#ffb800';c.fillText(rating.toFixed(1),ax,sy+ss*0.82);
+    c.font='600 11px monospace';c.fillStyle='#4a4f60';c.fillText(starLbl(rating),ax+44,sy+ss*0.82);
+    c.strokeStyle='rgba(13,242,122,0.12)';c.lineWidth=1;c.beginPath();c.moveTo(28,305);c.lineTo(W-28,305);c.stroke();
+    const stats=[{v:fmtNum(d.fol),l:'FOLLOWERS'},{v:pct(d.er),l:'ENG. RATE'},{v:fmtNum(Math.round(d.im)),l:'AVG IMPRESSIONS'},{v:Math.max(0,100-d.bot)+'%',l:'AUTHENTICITY'}];
+    const cw=(W-56)/4;
+    stats.forEach((s,i)=>{const x=28+i*cw;c.font='700 36px sans-serif';c.fillStyle='#f0f2f7';c.textAlign='left';c.fillText(s.v,x,365);c.font='400 10px monospace';c.fillStyle='#4a4f60';c.fillText(s.l,x,384);});
+    c.font='400 11px monospace';c.fillStyle='rgba(13,242,122,0.2)';c.textAlign='right';c.fillText('assay-mu.vercel.app',W-28,H-16);
+    window._sd={user,d,rating};
+  };
+  if(url){const img=new Image();img.crossOrigin='anonymous';img.onload=()=>paint(img);img.onerror=()=>paint(null);img.src=url;}
+  else paint(null);
+}
+
+function rrect(c,x,y,w,h,r){
+  c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);
+  c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);
+  c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();
+}
+
+function dlCard() {
+  const canvas=document.getElementById('creator-canvas');
+  try{const a=document.createElement('a');a.download='assay-creator-card.png';a.href=canvas.toDataURL('image/png');a.click();}
+  catch(e){alert('To save on iOS: long-press the card image and tap Save Image');}
+}
+
+function shareX() {
+  const sd=window._sd; if(!sd)return;
+  const {user,d,rating}=sd, auth=Math.max(0,100-d.bot);
+  const lines=['Just got my creator rate audited by ASSAY','','Rate: '+fmtMoney(d.sug)+' per promo post',
+    'Engagement: '+pct(d.er)+' (vs impressions)','Avg Impressions: '+fmtNum(Math.round(d.im)),
+    'Authenticity: '+auth+'% organic','Creator Score: '+rating.toFixed(1)+' / 5.0 - '+starLbl(rating),
+    '','Know your worth:','https://assay-mu.vercel.app'];
+  window.open('https://twitter.com/intent/tweet?text='+encodeURIComponent(lines.join('\n')),'_blank','width=600,height=500');
+}
+
+// ── Disconnect ────────────────────────────────────
+function disconnect() {
+  ['A_token','A_results','A_ov','A_pkce','A_state','A_mu'].forEach(k=>localStorage.removeItem(k));
+  _ov=null; showScreen('screen-landing');
+}
+
+// ── Init ──────────────────────────────────────────
+(async function init() {
+  const p=new URLSearchParams(window.location.search);
+  const code=p.get('code'), state=p.get('state'), err=p.get('error');
+
+  if(code||err) {
+    const dbg=document.getElementById('dbg'); const saved=localStorage.getItem('A_state');
+    if(dbg){dbg.style.display='block';dbg.textContent='code='+(code?code.slice(0,12)+'...':'none')+' | state_ok='+(state===saved)+' | err='+(err||'none')+' | pkce='+(localStorage.getItem('A_pkce')?'SET':'MISSING');setTimeout(()=>{dbg.style.display='none'},10000);}
+    try{window.history.replaceState({},'',window.location.pathname);}catch(e){}
+  }
+
+  if(err){showLandError('X denied authorization: '+err);return;}
+
+  if(code){
+    const saved=localStorage.getItem('A_state');
+    if(saved&&state&&state!==saved){showLandError('Auth mismatch — please try again.');return;}
+    await runFlow(code); return;
+  }
+
+  // Restore override
+  const ov=parseFloat(localStorage.getItem('A_ov'));
+  if(ov>0){_ov=ov;const el=document.getElementById('imp-override');if(el)el.value=ov;}
+
+  // Cached results
+  try{
+    const c=JSON.parse(localStorage.getItem('A_results')||'null');
+    if(c&&c.user&&c.tweets&&c.tweets.length){renderResults(c.user,c.tweets,c.hasImpressions);showScreen('screen-results');return;}
+  }catch(e){localStorage.removeItem('A_results');}
+
+  // Existing token
+  const token=localStorage.getItem('A_token');
+  if(token){
+    showScreen('screen-loading');setStatus('Resuming session...');
+    try{
+      const user=await fetchProfile(token);
+      setStep('step-auth','done');setStep('step-profile','done');setStep('step-tweets','active');setStatus('Loading tweets...');
+      const{tweets,hasImpressions}=await fetchTweets(token,user.id);
+      setStep('step-tweets','done');setStep('step-analyze','done');setStep('step-bot','done');await sleep(300);
+      localStorage.setItem('A_results',JSON.stringify({user,tweets,hasImpressions,ts:Date.now()}));
+      renderResults(user,tweets,hasImpressions);showScreen('screen-results');
+    }catch(e){localStorage.removeItem('A_token');showScreen('screen-landing');}
+    return;
+  }
+
+  // Saved manual user
+  try{
+    const mu=JSON.parse(localStorage.getItem('A_mu')||'null');
+    if(mu){window._mu=mu;const a=document.getElementById('m-avatar');if(a)a.src=(mu.profile_image_url||'').replace('_normal','_bigger');setText('m-name',mu.name);setText('m-handle','@'+mu.username);showScreen('screen-manual');return;}
+  }catch(e){}
+
+  showScreen('screen-landing');
+})();
+</script>
+</body>
+</html>
